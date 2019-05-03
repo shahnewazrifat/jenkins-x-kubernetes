@@ -28,6 +28,8 @@ resources:
   requests:
     cpu: 250m
     memory: 256Mi
+ingress:
+  enabled: false
 probePath: /
 livenessProbe:
   initialDelaySeconds: 60
