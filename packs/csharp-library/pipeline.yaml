@@ -13,7 +13,15 @@ pipelines:
     postBuild:
       steps:
       - sh: jx step post build --image $DOCKER_REGISTRY/$ORG/$APP_NAME:$PREVIEW_VERSION
-        name: post-build    
+        name: post-build
+    promote:
+      steps:
+      - dir: ./charts/preview
+        steps:
+        - sh: make preview
+          name: make-preview
+        - sh: jx preview --app $APP_NAME --dir ../..
+          name: jx-preview
 
   release:
     setVersion:
@@ -25,4 +33,16 @@ pipelines:
       - sh: export VERSION=`cat VERSION` && skaffold build -f skaffold.yaml
         name: container-build
       - sh: jx step post build --image $DOCKER_REGISTRY/$ORG/$APP_NAME:\$(cat VERSION)
-        name: post-build    
+        name: post-build
+    promote:
+      steps:
+      - dir: ./charts/REPLACE_ME_APP_NAME
+        steps:
+        - sh: jx step changelog --version v\$(cat ../../VERSION)
+          name: changelog
+        - comment: release the helm chart
+          sh: jx step helm release
+          name: helm-release
+        - comment: promote through all 'Auto' promotion Environments
+          sh: jx promote -b --all-auto --timeout 1h --version \$(cat ../../VERSION)
+          name: jx-promote
